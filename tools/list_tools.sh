@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-# @describe List all active tools by reading from tools.txt, filtering out commented lines, and stripping file extensions.
+# @describe List all tools on the system. This list is only for reference, they are not necessarily available in the current chat session. If you find a tool that you want to use, ask the user to enable it.
 # This tool takes no arguments.
 
 main() {
