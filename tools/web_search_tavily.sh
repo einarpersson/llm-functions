@@ -6,8 +6,14 @@ set -e
 
 # @env TAVILY_API_KEY! The api key
 # @option --query! The query to search for.
+# @flag --include-results Include an array of search results in the output, including urls, titles and brief content.
 
 main() {
+    local jq_filter='{answer}'
+    if [[ "$argc_include_results" == "1" ]]; then
+        jq_filter='{answer, results}'
+    fi
+
     curl -fsSL -X POST https://api.tavily.com/search \
         -H "content-type: application/json" \
         -d '
@@ -16,7 +22,7 @@ main() {
     "query": "'"$argc_query"'",
     "include_answer": true
 }' | \
-    jq -r '.answer' >> "$LLM_OUTPUT"
+    jq "$jq_filter" >> "$LLM_OUTPUT"
 }
 
 eval "$(argc --argc-eval "$0" "$@")"
