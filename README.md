@@ -1,6 +1,8 @@
 # LLM Functions
 
-This project helps you easily create LLM tools and agents based on Bash, JavaScript, and Python. Additionally, it offers a comprehensive collection of pre-built tools and agents for your convenience.
+This project empowers you to effortlessly build powerful LLM tools and agents using familiar languages like Bash, JavaScript, and Python. 
+
+Forget complex integrations, **harness the power of [function calling](https://platform.openai.com/docs/guides/function-calling)** to connect your LLMs directly to custom code and unlock a world of possibilities. Execute system commands, process data, interact with APIs –  the only limit is your imagination.
 
 **Tools Showcase**
 ![llm-function-tool](https://github.com/user-attachments/assets/40c77413-30ba-4f0f-a2c7-19b042a1b507)
@@ -12,20 +14,22 @@ This project helps you easily create LLM tools and agents based on Bash, JavaScr
 
 Make sure you have the following tools installed:
 
-- [argc](https://github.com/sigoden/argc): A bash command-line framewrok and command runner
+- [argc](https://github.com/sigoden/argc): A bash command-line framework and command runner
 - [jq](https://github.com/jqlang/jq): A JSON processor
 
 ## Getting Started with [AIChat](https://github.com/sigoden/aichat)
 
-### 1. Clone the repository:
+**Currently, AIChat is the only CLI tool that supports `llm-functions`. We look forward to more tools supporting `llm-functions`.**
+
+### 1. Clone the repository
 
 ```sh
 git clone https://github.com/sigoden/llm-functions
 ```
 
-### 2. Build tools and agents:
+### 2. Build tools and agents
 
-**I. Create a `./tools.txt` file with each tool filename on a new line.**
+#### I. Create a `./tools.txt` file with each tool filename on a new line.
 
 ```
 get_current_weather.sh
@@ -35,38 +39,61 @@ execute_command.sh
 
 <details>
 <summary>Where is the web_search tool?</summary>
+<br>
 
-The normal `web_search` tool does not exist. Please run `argc link-web-search <web-search-tool>` to link to one of the available `web_search_*` tools.
+The `web_search` tool itself doesn't exist directly, Instead, you can choose from a variety of web search tools.
 
-```
-$ argc link-web-search web_search_<tab>
-web_search_cohere.sh    web_search_perplexity.sh    web_search_tavily.sh    web_search_vertexai.sh     
-```
+To use one as the `web_search` tool, follow these steps:
+
+1. **Choose a Tool:** Available tools include:
+    * `web_search_cohere.sh`
+    * `web_search_perplexity.sh`
+    * `web_search_tavily.sh`
+    * `web_search_vertexai.sh`
+
+2. **Link Your Choice:** Use the `argc` command to link your chosen tool as `web_search`. For example, to use `web_search_perplexity.sh`:
+
+    ```sh
+    $ argc link-web-search web_search_perplexity.sh
+    ```
+
+    This command creates a symbolic link, making `web_search.sh` point to your selected `web_search_perplexity.sh` tool. 
+
+Now there is a `web_search.sh` ready to be added to your `./tools.txt`.
 
 </details>
 
-**II. Create a `./agents.txt` file with each agent name on a new line.**
+#### II. Create a `./agents.txt` file with each agent name on a new line.
 
 ```
 coder
 todo
 ```
 
-**III. Run `argc build` to build tools and agents.**
-
-### 3. Install to AIChat:
-
-Symlink this repo directory to AIChat **functions_dir**:
+#### III. Build `bin` and `functions.json`
 
 ```sh
-ln -s "$(pwd)" "$(aichat --info | grep -w functions_dir | awk '{print $2}')"
+argc build
+```
+
+### 3. Install to AIChat
+
+Symlink this repo directory to AIChat's **functions_dir**:
+
+```sh
+ln -s "$(pwd)" "$(aichat --info | grep -w functions_dir | awk '{$1=""; print substr($0,2)}')"
 # OR
 argc install
 ```
 
-### 4. Start using the functions:
+### 4. Start using the functions
 
-Done! You can experience the magic of `llm-functions` in AIChat.
+Done! Now you can use the tools and agents with AIChat.
+
+```sh
+aichat --role %functions% what is the weather in Paris?
+aichat --agent todo list all my todos
+```
 
 ## Writing Your Own Tools
 
@@ -125,15 +152,15 @@ def main(code: str):
 
 ## Writing Your Own Agents
 
-Agent = Prompt + Tools (Function Callings) + Knowndge (RAG). It's also known as OpenAI's GPTs.
+Agent = Prompt + Tools (Function Calling) + Documents (RAG), which is equivalent to OpenAI's GPTs.
 
 The agent has the following folder structure:
 ```
 └── agents
     └── myagent
-        ├── functions.json                  # Function JSON declarations (Auto-generated)
+        ├── functions.json                  # JSON declarations for functions (Auto-generated)
         ├── index.yaml                      # Agent definition
-        ├── tools.txt                       # Shared tools from ./tools
+        ├── tools.txt                       # Shared tools
         └── tools.{sh,js,py}                # Agent tools 
 ```
 
