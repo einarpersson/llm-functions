@@ -11,7 +11,7 @@ def main():
     agent_data = parse_raw_data(raw_data)
 
     root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-    setup_env(root_dir, agent_name)
+    setup_env(root_dir, agent_name, agent_func)
 
     agent_tools_path = os.path.join(root_dir, f"agents/{agent_name}/tools.py")
     run(agent_tools_path, agent_func, agent_data)
@@ -49,10 +49,11 @@ def parse_argv(this_file_name):
     return agent_name, agent_func, agent_data
 
 
-def setup_env(root_dir, agent_name):
+def setup_env(root_dir, agent_name, agent_func):
     load_env(os.path.join(root_dir, ".env"))
     os.environ["LLM_ROOT_DIR"] = root_dir
     os.environ["LLM_AGENT_NAME"] = agent_name
+    os.environ["LLM_AGENT_FUNC"] = agent_func
     os.environ["LLM_AGENT_ROOT_DIR"] = os.path.join(root_dir, "agents", agent_name)
     os.environ["LLM_AGENT_CACHE_DIR"] = os.path.join(root_dir, "cache", agent_name)
 
@@ -60,15 +61,29 @@ def setup_env(root_dir, agent_name):
 def load_env(file_path):
     try:
         with open(file_path, "r") as f:
-            for line in f:
-                line = line.strip()
-                if line.startswith("#") or line == "":
-                    continue
+            lines = f.readlines()
+    except:
+        return
 
-                key, *value = line.split("=")
-                os.environ[key.strip()] = "=".join(value).strip()
-    except FileNotFoundError:
-        pass
+    env_vars = {}
+
+    for line in lines:
+        line = line.strip()
+        if line.startswith("#") or not line:
+            continue
+
+        key, *value_parts = line.split("=")
+        env_name = key.strip()
+
+        if env_name not in os.environ:
+            env_value = "=".join(value_parts).strip()
+            if env_value.startswith('"') and env_value.endswith('"'):
+                env_value = env_value[1:-1]
+            elif env_value.startswith("'") and env_value.endswith("'"):
+                env_value = env_value[1:-1]
+            env_vars[env_name] = env_value
+
+    os.environ.update(env_vars)
 
 
 def run(agent_path, agent_func, agent_data):
@@ -86,6 +101,42 @@ def run(agent_path, agent_func, agent_data):
 
     value = getattr(mod, agent_func)(**agent_data)
     return_to_llm(value)
+    dump_result()
+
+
+def dump_result():
+    if not os.isatty(1):
+        return
+
+    if not os.getenv("LLM_OUTPUT"):
+        return
+
+    show_result = False
+    agent_name = os.environ["LLM_AGENT_NAME"].upper().replace("-", "_")
+    agent_env_name = f"LLM_AGENT_DUMP_RESULT_{agent_name}"
+    agent_env_value = os.getenv(agent_env_name, os.getenv("LLM_AGENT_DUMP_RESULT"))
+
+    func_name = os.environ["LLM_AGENT_FUNC"].upper().replace("-", "_")
+    func_env_name = f"{agent_env_name}_{func_name}"
+    func_env_value = os.getenv(func_env_name)
+
+    if agent_env_value in ("1", "true"):
+        if func_env_value not in ("0", "false"):
+            show_result = True
+    else:
+        if func_env_value in ("1", "true"):
+            show_result = True
+
+    if not show_result:
+        return
+
+    try:
+        with open(os.environ["LLM_OUTPUT"], "r", encoding="utf-8") as f:
+            data = f.read()
+    except:
+        return
+
+    print(f"\x1b[2m----------------------\n{data}\n----------------------\x1b[0m")
 
 
 def return_to_llm(value):
@@ -107,4 +158,8 @@ def return_to_llm(value):
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        print(e, file=sys.stderr)
+        sys.exit(1)
