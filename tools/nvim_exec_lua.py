@@ -8,7 +8,8 @@ def run(chunk: str) -> str:
         A list of strings representing the lines read from the buffer
 
     Example:
-        "return vim.diagnostic.get()" -> returns a list of diagnostics
+        Fetch diagnostics: "return vim.diagnostic.get()"
+        Append a line to the buffer: "vim.api.nvim_buf_set_lines(0, -1, -1, false, {'Hello, World!'})"
     """
 
     rpc_address = "/tmp/nvim_aichat.sock"
