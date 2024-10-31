@@ -1,15 +1,22 @@
 import pynvim
 
 def run(chunk: str) -> str:
-    """This function executes lua code in the current neovim session over RPC. It only evaluates statements. Expressions have to be prepended with return. The lua code should only return strings.
+    """This function executes a chunk of lua code in the current neovim session over RPC. The returning value will be converted to a string. 
+
+    Will be executed in the following way:
+    ```
+    return vim.inspect((function() {chunk} end)())
+    ```
+
     Args:
-        chunk: The lua code to execute
+        chunk: The lua code to execute, as a function body.
     Returns:
-        A list of strings representing the lines read from the buffer
+        A string representation of the return value of the lua code.
 
     Example:
-        Fetch diagnostics: "return vim.diagnostic.get()"
-        Append a line to the buffer: "vim.api.nvim_buf_set_lines(0, -1, -1, false, {'Hello, World!'})"
+        {
+          "chunk": "return vim.diagnostic.get()"
+        }
     """
 
     rpc_address = "/tmp/nvim_aichat.sock"
@@ -19,5 +26,10 @@ def run(chunk: str) -> str:
     except FileNotFoundError:
         return "Neovim RPC socket not found. Please start the server first."
 
-    return nvim.exec_lua(chunk)
+    # chunk_to_execute = f"return vim.print({chunk})"
+    chunk_to_execute = f"""
+    return vim.inspect((function() {chunk} end)())
+    """
+
+    return nvim.exec_lua(chunk_to_execute)
 
