@@ -1,7 +1,7 @@
 import pynvim
 
 def run(chunk: str) -> str:
-    """This function executes lua code in the current neovim session over RPC. It only evaluates statements. Expressions have to be prepended with return.
+    """This function executes lua code in the current neovim session over RPC. It only evaluates statements. Expressions have to be prepended with return. The lua code should only return strings.
     Args:
         chunk: The lua code to execute
     Returns:
