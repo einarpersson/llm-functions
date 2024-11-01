@@ -1,7 +1,30 @@
 import pynvim
+import time
 import os
 import subprocess
 from pathlib import Path
+
+def find_nvim_instance(filename: str) -> tuple[pynvim.Nvim | None, str | None]:
+    """Find a running Neovim instance that has the specified file open.
+
+    Args:
+        filename: The file to look for in Neovim buffers
+
+    Returns:
+        A tuple of (nvim_instance, rpc_address). Both will be None if no suitable instance is found.
+    """
+    sock_files = list(Path('/tmp/nvim.einar').rglob('*.sock'))
+
+    for sock_file in sock_files:
+        try:
+            nvim = pynvim.attach("socket", path=str(sock_file))
+            buffer = nvim.current.buffer
+            if filename in buffer.name:
+                return nvim, str(sock_file)
+        except FileNotFoundError:
+            continue
+
+    return None, None
 
 def run(filename: str, instructions: str) -> str:
     """Edit a file with natural language instructions. 
@@ -30,29 +53,20 @@ def run(filename: str, instructions: str) -> str:
 
     """
 
-    sock_files = list(Path('/tmp/nvim.einar').rglob('*.sock'))
-
-    rpc_address = None
-    nvim = None
-    for sock_file in sock_files:
-        try:
-            nvim = pynvim.attach("socket", path=str(sock_file))
-            buffer = nvim.current.buffer
-            if filename in buffer.name:
-                rpc_address = str(sock_file)
-                break
-        except FileNotFoundError:
-            continue
+    nvim, rpc_address = find_nvim_instance(filename)
 
     if rpc_address is None:
-        return "Not implemented yet."
+        # Start a new headless Neovim instance and let it run for the duration of the request
 
-    # Now, let's read the file contents and send it to the assistant
-    if nvim is None:
+        subprocess.run(["nvim", "--headless"], capture_output=True)
+        # wait for the nvim instance to start
+        time.sleep(1)
+        nvim, rpc_address = find_nvim_instance(filename)
+
+    if nvim is None or rpc_address is None:
         return "Neovim session not found."
 
     file_contents = "\n".join(nvim.current.buffer[:])
-
     if len(file_contents) > 100000:
         return "File too large. Limit is 100,000 characters."
 
@@ -61,10 +75,11 @@ def run(filename: str, instructions: str) -> str:
     os.environ["FILE_CONTENTS"] = file_contents
     os.environ["INSTRUCTIONS"] = instructions
 
-    print(f"RPC_ADDRESS: {os.environ['RPC_ADDRESS']}")
-    print(f"FILE_TO_EDIT: {os.environ['FILE_TO_EDIT']}")
-    print(f"FILE_CONTENTS length: {len(os.environ['FILE_CONTENTS'])}")
-    print(f"INSTRUCTIONS: {os.environ['INSTRUCTIONS']}")
+    if os.environ.get('DEBUG', '').lower() == 'true':
+        print(f"RPC_ADDRESS: {os.environ['RPC_ADDRESS']}")
+        print(f"FILE_TO_EDIT: {os.environ['FILE_TO_EDIT']}")
+        print(f"FILE_CONTENTS length: {len(os.environ['FILE_CONTENTS'])}")
+        print(f"INSTRUCTIONS: {os.environ['INSTRUCTIONS']}")
 
     response = subprocess.run(["aichat", "-r", "file", "Execute."],
                         capture_output=True,
