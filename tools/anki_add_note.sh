@@ -7,7 +7,7 @@ set -e
 
 main() {
     if apy add-single "$argc_front" "$argc_back"; then
-        echo "Added new Anki note with front: '$argc_front' and back: '$argc_back'"
+        "Added new Anki note with front: '$argc_front' and back: '$argc_back'" >> "$LLM_OUTPUT"
     fi
 }
 
