@@ -5,5 +5,15 @@
  * @param {Args} args
  */
 exports.run = function run({ code }) {
-  return eval(code);
+  let output = "";
+  const oldStdoutWrite = process.stdout.write.bind(process.stdout);
+  process.stdout.write = (chunk, _encoding, callback) => {
+    output += chunk;
+    if (callback) callback();
+  };
+
+  eval(code);
+  
+  process.stdout.write = oldStdoutWrite;
+  return output;
 }

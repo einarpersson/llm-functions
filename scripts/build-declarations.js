@@ -10,11 +10,13 @@ function main() {
   const isTool = path.dirname(scriptfile) == "tools";
   const contents = fs.readFileSync(process.argv[2], "utf8");
   const functions = extractFunctions(contents, isTool);
-  let declarations = functions.map(({ funcName, jsdoc }) => {
+  let declarations = [];
+  for (const { funcName, jsdoc } of functions) {
     const { description, params } = parseJsDoc(jsdoc, funcName);
+    if (!description) continue;
     const declaration = buildDeclaration(funcName, description, params);
-    return declaration;
-  });
+    declarations.push(declaration);
+  }
   if (isTool) {
     const name = getBasename(scriptfile);
     if (declarations.length > 0) {
@@ -69,7 +71,7 @@ function extractFunctions(contents, isTool) {
             funcName = match[1];
           }
         }
-        if (funcName) {
+        if (funcName && !funcName.startsWith("_")) {
           output.push({ funcName, jsdoc });
         }
       }
