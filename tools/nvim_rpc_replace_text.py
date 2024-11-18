@@ -4,7 +4,6 @@ import json
 
 def run(search: str, replace: str) -> str:
     """Replace text in the current buffer.
-    ```
 
     Args:
         search: The string to search for. Has to be unique and exact.

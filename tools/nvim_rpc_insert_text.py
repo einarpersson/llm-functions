@@ -2,11 +2,11 @@ import pynvim
 import os
 import json
 
-def run(line: int, text: str) -> str:
+def run(line_nr: int, text: str) -> str:
     """Insert text into the current buffer at the specified line.
 
     Args:
-        line: Line number to insert text.
+        line_nr: Line number to insert text.
         text: Text to insert.
 
     Returns:
@@ -23,5 +23,5 @@ def run(line: int, text: str) -> str:
     except FileNotFoundError:
         return "Neovim RPC socket not found. Please start the server first."
 
-    return nvim.exec_lua(f"return require('aichat_utils').insert_text({line}, {json.dumps(text, ensure_ascii=False)})")
+    return nvim.exec_lua(f"return require('aichat_utils').insert_text({line_nr}, {json.dumps(text, ensure_ascii=False)})")
 
