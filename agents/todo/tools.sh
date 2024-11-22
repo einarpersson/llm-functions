@@ -3,6 +3,8 @@ set -e
 
 # @env LLM_OUTPUT=/dev/stdout The output path
 
+ROOT_DIR="${LLM_ROOT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+
 # @cmd Add a new todo item
 # @option --desc! The todo description
 add_todo() {
@@ -65,13 +67,7 @@ list_todos() {
 clear_todos() {
     todos_file="$(_get_todos_file)"
     if [[ -f "$todos_file" ]]; then
-        if [ -t 1 ]; then
-            read -r -p "Clean the entire todo list? [Y/n] " ans
-            if [[ "$ans" == "N" || "$ans" == "n" ]]; then
-                echo "Aborted!"
-                exit 1
-            fi
-        fi
+        "$ROOT_DIR/utils/guard_operation.sh" "Clean the entire todo list?"
         rm -rf "$todos_file"
         echo "Successfully cleaned the entire todo list" >> "$LLM_OUTPUT"
     else
