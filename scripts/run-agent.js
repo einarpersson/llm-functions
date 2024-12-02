@@ -31,8 +31,13 @@ function parseArgv(thisFileName) {
     agentData = process.argv[3];
   }
 
-  if (agentName.endsWith(".js")) {
+  if (agentName && agentName.endsWith(".js")) {
     agentName = agentName.slice(0, -3);
+  }
+
+  if (!agentData || !agentFunc || !agentName) {
+    console.log(`Usage: ./run-agent.js <agent-name> <agent-func> <agent-data>`);
+    process.exit(1);
   }
 
   return [agentName, agentFunc, agentData];
@@ -175,11 +180,7 @@ async function dumpResult() {
   process.stdout.write(`\x1b[2m----------------------\n${data}\n----------------------\x1b[0m\n`);
 }
 
-(async () => {
-  try {
-    await main();
-  } catch (err) {
-    console.error(err?.message || err);
-    process.exit(1);
-  }
-})();
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

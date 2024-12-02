@@ -28,8 +28,13 @@ function parseArgv(thisFileName) {
     toolData = process.argv[2];
   }
 
-  if (toolName.endsWith(".js")) {
+  if (toolName && toolName.endsWith(".js")) {
     toolName = toolName.slice(0, -3);
+  }
+
+  if (!toolData || !toolName) {
+    console.log(`Usage: ./run-tools.js <tool-name> <tool-data>`);
+    process.exit(1);
   }
 
   return [toolName, toolData];
@@ -158,11 +163,7 @@ async function dumpResult() {
   process.stdout.write(`\x1b[2m----------------------\n${data}\n----------------------\x1b[0m\n`);
 }
 
-(async () => {
-  try {
-    await main();
-  } catch (err) {
-    console.error(err?.message || err);
-    process.exit(1);
-  }
-})();
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
