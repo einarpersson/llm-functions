@@ -6,7 +6,9 @@ def run(chunk: str) -> str:
 
     Will be executed in the following way:
     ```
-    return vim.inspect((function() {chunk} end)())
+    return vim.inspect((function()
+    {chunk}
+    end)())
     ```
 
     Args:
@@ -32,7 +34,9 @@ def run(chunk: str) -> str:
 
     # chunk_to_execute = f"return vim.print({chunk})"
     chunk_to_execute = f"""
-    return vim.inspect((function() {chunk} end)())
+    return vim.inspect((function()
+    {chunk}
+    end)())
     """
 
     return nvim.exec_lua(chunk_to_execute)
