@@ -1,10 +1,8 @@
 import pynvim
 import os
-# import json
-# from typing import Optional
+from typing import Optional
 
-# def run(bufnr: Optional[number]) -> str:
-def run() -> str:
+def run(bufnr: Optional[int]) -> str:
     """Read current buffer.
 
     Returns:
@@ -21,5 +19,5 @@ def run() -> str:
     except FileNotFoundError:
         return "Neovim RPC socket not found. Please start the server first."
 
-    return nvim.exec_lua(f"return require('aichat_utils').read_buffer()")
+    return nvim.exec_lua(f"return require('aichat_utils').read_buffer({bufnr})")
 
