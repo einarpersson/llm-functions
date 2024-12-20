@@ -2,7 +2,7 @@
 set -e
 
 BIN_DIR=bin
-TMP_DIR="cache/tmp"
+TMP_DIR="cache/__tmp__"
 VENV_DIR=".venv"
 
 LANG_CMDS=( \
@@ -28,7 +28,7 @@ run@tool() {
     fi
     lang="${argc_tool##*.}"
     cmd="$(_lang_to_cmd "$lang")"
-    run_tool_script="$PWD/scripts/run-tool.$lang"
+    run_tool_script="scripts/run-tool.$lang"
     [[ -n "$argc_cwd" ]] && cd "$argc_cwd"
     exec "$cmd" "$run_tool_script" "$argc_tool" "$argc_json"
 }
@@ -52,7 +52,7 @@ run@agent() {
     tools_path="$(_get_agent_tools_path "$argc_agent")"
     lang="${tools_path##*.}"
     cmd="$(_lang_to_cmd "$lang")"
-    run_agent_script="$PWD/scripts/run-agent.$lang"
+    run_agent_script="scripts/run-agent.$lang"
     [[ -n "$argc_cwd" ]] && cd "$argc_cwd"
     exec "$cmd" "$run_agent_script"  "$argc_agent" "$argc_action" "$argc_json"
 }
@@ -162,6 +162,9 @@ build-declarations@tool() {
         json_data="$(generate-declarations@tool "$name" | jq -r '.[0]')" || {
             build_failed_tools+=("$name")
         }
+        if [[ "$json_data" == "null" ]]; then
+            _die "error: failed to build declarations for tool $name"
+        fi
         json_list+=("$json_data")
     done
     if [[ -n "$not_found_tools" ]]; then
@@ -421,9 +424,8 @@ test-demo@tool() {
 # @cmd Test agents
 # @alias agent:test
 test@agent() {
-    tmp_dir="cache/tmp"
-    mkdir -p "$tmp_dir"
-    names_file="$tmp_dir/agents.txt"
+    mkdir -p "$TMP_DIR"
+    names_file="$TMP_DIR/agents.txt"
     argc list@agent > "$names_file"
     argc build@agent --names-file "$names_file"
     test-demo@agent
@@ -446,6 +448,13 @@ test-demo@agent() {
             echo
         fi
     done
+}
+
+# @cmd Clean the project
+clean() {
+    clean@tool
+    clean@agent
+    rm -rf "$BIN_DIR/"*
 }
 
 # @cmd Clean tools
@@ -499,6 +508,12 @@ install() {
     fi
 }
 
+# @cmd Run mcp command
+# @arg args~[?`_choice_mcp_args`] The mcp command and arguments
+mcp() {
+    bash ./scripts/mcp.sh "$@"
+}
+
 # @cmd Create a boilplate tool script
 # @alias tool:create
 # @arg args~
@@ -506,7 +521,7 @@ create@tool() {
     ./scripts/create-tool.sh "$@"
 }
 
-# @cmd Show pre-requisite tool versions
+# @cmd Displays version information for required tools
 version() {
     uname -a
     if command -v aichat &> /dev/null; then
@@ -669,6 +684,16 @@ _choice_agent_action() {
         expr="s/:.*//"
     fi
     argc generate-declarations@agent "$1" --oneline | sed "$expr"
+}
+
+_choice_mcp_args() {
+    if [[ "$ARGC_COMPGEN" -eq 1 ]]; then
+        args=( "${argc__positionals[@]}" )
+        args[-1]="$ARGC_LAST_ARG"
+        argc --argc-compgen generic scripts/mcp.sh mcp "${args[@]}"
+    else
+        :;
+    fi
 }
 
 _die() {

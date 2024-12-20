@@ -1,16 +1,15 @@
 #!/usr/bin/env bash
 
-# Usage: ./run-tool.sh <tool-name> <tool-data>
+# Usage: ./run-mcp-tool.sh <tool-name> <tool-data>
 
 set -e
 
 main() {
     root_dir="$(cd -- "$( dirname -- "${BASH_SOURCE[0]}" )/.." &> /dev/null && pwd)"
-    self_name=run-tool.sh
+    self_name=run-mcp-tool.sh
     parse_argv "$@"
-    setup_env
-    tool_path="$root_dir/tools/$tool_name.sh"
-    run 
+    load_env "$root_dir/.env" 
+    run
 }
 
 parse_argv() {
@@ -29,12 +28,6 @@ parse_argv() {
     fi
 }
 
-setup_env() {
-    load_env "$root_dir/.env" 
-    export LLM_ROOT_DIR="$root_dir"
-    export LLM_TOOL_NAME="$tool_name"
-    export LLM_TOOL_CACHE_DIR="$LLM_ROOT_DIR/cache/$tool_name"
-}
 
 load_env() {
     local env_file="$1" env_vars
@@ -60,41 +53,41 @@ run() {
 
     if [[ "$OS" == "Windows_NT" ]]; then
         set -o igncr
-        tool_path="$(cygpath -w "$tool_path")"
         tool_data="$(echo "$tool_data" | sed 's/\\/\\\\/g')"
     fi
 
-    jq_script="$(cat <<-'EOF'
-def escape_shell_word:
-  tostring
-  | gsub("'"; "'\"'\"'")
-  | gsub("\n"; "'$'\\n''")
-  | "'\(.)'";
-def to_args:
-    to_entries | .[] | 
-    (.key | split("_") | join("-")) as $key |
-    if .value | type == "array" then
-        .value | .[] | "--\($key) \(. | escape_shell_word)"
-    elif .value | type == "boolean" then
-        if .value then "--\($key)" else "" end
-    else
-        "--\($key) \(.value | escape_shell_word)"
-    end;
-[ to_args ] | join(" ")
-EOF
-)"
-    args="$(echo "$tool_data" | jq -r "$jq_script" 2>/dev/null)" || {
-        die "error: invalid JSON data"
-    }
     if [[ -z "$LLM_OUTPUT" ]]; then
         is_temp_llm_output=1
         export LLM_OUTPUT="$(mktemp)"
     fi
-    eval "'$tool_path' $args"
+
+    if [[ -n "$LLM_MCP_SKIP_CONFIRM" ]]; then
+        if grep -q -w -E "$LLM_MCP_SKIP_CONFIRM" <<<"$tool_name"; then
+            skip_confirm=1
+        fi
+    fi
+    if [[ -n "$LLM_MCP_NEED_CONFIRM" ]]; then
+        if grep -q -w -E "$LLM_MCP_NEED_CONFIRM" <<<"$tool_name"; then
+            skip_confirm=0
+        fi
+    fi
+    if [[ -t 1 ]] && [[ "$skip_confirm" -ne 1 ]]; then
+        read -r -p "Are you sure you want to continue? [Y/n] " ans
+        if [[ "$ans" == "N" || "$ans" == "n" ]]; then
+            echo "error: canceled!" 2>&1
+            exit 1
+        fi
+    fi
+
+    curl -sS "http://localhost:${MCP_BRIDGE_PORT:-8808}/tools/$tool_name" \
+        -X POST \
+        -H 'content-type: application/json' \
+        -d "$tool_data" > "$LLM_OUTPUT"
+
     if [[ "$is_temp_llm_output" -eq 1 ]]; then
         cat "$LLM_OUTPUT"
     else
-        dump_result "$tool_name"
+        dump_result "$tool_name" 
     fi
 }
 
@@ -103,17 +96,12 @@ dump_result() {
         return;
     fi
     if grep -q -w -E "$LLM_DUMP_RESULTS" <<<"$1"; then
-        cat <<EOF
+            cat <<EOF
 $(echo -e "\e[2m")----------------------
 $(cat "$LLM_OUTPUT")
 ----------------------$(echo -e "\e[0m")
 EOF
     fi
-}
-
-die() {
-    echo "$*" >&2
-    exit 1
 }
 
 main "$@"
