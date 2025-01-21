@@ -11,7 +11,7 @@ main() {
     apy add-single ${argc_tag:+-t "$argc_tag"} "$argc_front" "$argc_back"
     
     # If we get here, the command succeeded (due to set -e)
-    "Added new Anki note with front: '$argc_front' and back: '$argc_back'${argc_tag:+ and tag: '$argc_tag'}" >> "$LLM_OUTPUT"
+    echo "Added new Anki note with front: '$argc_front' and back: '$argc_back'${argc_tag:+ and tag: '$argc_tag'}" >> "$LLM_OUTPUT"
 }
 
 eval "$(argc --argc-eval "$0" "$@")"
