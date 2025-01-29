@@ -1,4 +1,5 @@
 import os
+import re
 from openai import OpenAI
 
 def run(
@@ -6,6 +7,7 @@ def run(
     """Use DeepSeek-R1 model to generate a reasoned response.
     Args:
         prompt: The user's prompt/question to reason about
+        show_thinking: Whether to show the thinking process in <think> tags
     """
     api_key = os.environ.get("KLUSTER_API_KEY")
     if not api_key:
@@ -25,8 +27,17 @@ def run(
             ],
         )
 
-        # Extract just the message content from the response
-        return chat_completion.choices[0].message.content
+        response = chat_completion.choices[0].message.content
+        if response is None:
+            return "Error: Received empty response from API"
+
+        show_thinking = False
+        
+        # Remove thinking section if show_thinking is False
+        if not show_thinking:
+            response = re.sub(r'<think>.*?</think>\n*', '', response, flags=re.DOTALL)
+        
+        return response.strip()
 
     except Exception as e:
         return f"Error: {str(e)}"
