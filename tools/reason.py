@@ -37,7 +37,13 @@ def run(
         if not show_thinking:
             response = re.sub(r'<think>.*?</think>\n*', '', response, flags=re.DOTALL)
         
-        return response.strip()
+        result = response.strip()
+
+        print("Reasoning...")
+        print(result)
+        print("Done reasoning.")
+        
+        return result
 
     except Exception as e:
         return f"Error: {str(e)}"
