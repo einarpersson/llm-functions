@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -e
 
 # @describe Execute the shell command.
 # @option --command! The command to execute.
@@ -25,7 +24,6 @@ main() {
 
 		# If the aichat_safe is not 'yes' then we should trigger the guard operation.
 		if [ "$is_safe_ai_assessment" != "yes" ]; then
-			# Trigger the guard operation
 			if ! "$ROOT_DIR/utils/guard_operation.sh"; then
 				echo "IMPORANT: OPERATION DISALLOWED BY USER, HALT IMMEDIATELY AND WAIT FOR FURTHER INSTRUCTIONS FROM USER." >> "$LLM_OUTPUT"
 			  exit 0
@@ -34,10 +32,17 @@ main() {
 			# Show a message to the user
 			echo "The command is assessed as safe to execute."
 		fi
+		
+		bash <<EOF 2>&1 >> "$LLM_OUTPUT"
+$argc_command
+EOF
+		exit_code=$?
 
-		# If the aichat_safe is 'yes' then
-		if ! eval "$argc_command" >> "$LLM_OUTPUT"; then
-			echo "Failed to execute the command, please HALT and wait for further instructions." >> "$LLM_OUTPUT"
+		if [ $exit_code -ne 0 ]; then
+  		echo "Failed to execute the command"
+    	echo "Failed to execute the command, please HALT and wait for further instructions." >> "$LLM_OUTPUT"
+		else
+			echo "Command executed with exit code: $exit_code" >> "$LLM_OUTPUT"
 		fi
 }
 
