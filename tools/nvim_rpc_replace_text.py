@@ -1,5 +1,7 @@
-import pynvim
 import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+from utils.nvim_rpc import get_nvim
 import json
 
 def run(search: str, replace: str) -> str:
@@ -18,15 +20,7 @@ def run(search: str, replace: str) -> str:
         }
     """
 
-    rpc_address = os.environ.get("RPC_ADDRESS")
-
-    if rpc_address is None:
-        return "Neovim RPC_ADDRESS not set."
-
-    try:
-        nvim = pynvim.attach("socket", path=rpc_address)
-    except FileNotFoundError:
-        return "Neovim RPC socket not found. Please start the server first."
+    nvim = get_nvim()
 
     return nvim.exec_lua(f"return require('aichat_utils').replace_text({json.dumps(search, ensure_ascii=False)}, {json.dumps(replace, ensure_ascii=False)})")
 

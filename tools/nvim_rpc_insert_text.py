@@ -1,6 +1,8 @@
-import pynvim
 import os
 import json
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+from utils.nvim_rpc import get_nvim
 
 def run(line_nr: int, text: str) -> str:
     """Insert text into the current buffer at the specified line.
@@ -13,15 +15,7 @@ def run(line_nr: int, text: str) -> str:
         Status message.
     """
 
-    rpc_address = os.environ.get("RPC_ADDRESS")
-
-    if rpc_address is None:
-        return "Neovim RPC_ADDRESS not set."
-
-    try:
-        nvim = pynvim.attach("socket", path=rpc_address)
-    except FileNotFoundError:
-        return "Neovim RPC socket not found. Please start the server first."
+    nvim = get_nvim()
 
     return nvim.exec_lua(f"return require('aichat_utils').insert_text({line_nr}, {json.dumps(text, ensure_ascii=False)})")
 

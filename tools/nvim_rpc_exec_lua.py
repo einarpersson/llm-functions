@@ -1,5 +1,7 @@
-import pynvim
 import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+from utils.nvim_rpc import get_nvim
 
 def run(chunk: str) -> str:
     """This function executes a chunk of lua code in the current neovim session over RPC. The returning value will be converted to a string. 
@@ -22,17 +24,8 @@ def run(chunk: str) -> str:
         }
     """
 
-    rpc_address = os.environ.get("RPC_ADDRESS")
+    nvim = get_nvim()
 
-    if rpc_address is None:
-        return "Neovim RPC_ADDRESS not set."
-
-    try:
-        nvim = pynvim.attach("socket", path=rpc_address)
-    except FileNotFoundError:
-        return "Neovim RPC socket not found. Please start the server first."
-
-    # chunk_to_execute = f"return vim.print({chunk})"
     chunk_to_execute = f"""
     return vim.inspect((function()
     {chunk}
