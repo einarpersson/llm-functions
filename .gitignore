@@ -1,6 +1,6 @@
 /tmp
-/tools.txt
-/agents.txt
+# /tools.txt
+# /agents.txt
 functions.json
 /bin
 /cache
@@ -16,4 +16,4 @@ node_modules
 package-lock.json
 *.lock
 /mcp.json
-.envrc
+/.envrc
